@@ -1,7 +1,7 @@
 #[derive(serde::Deserialize)]
-pub struct Settings{
+pub struct Settings {
     pub database: DatabaseSettings,
-    pub application_port: u16
+    pub application_port: u16,
 }
 
 #[derive(serde::Deserialize)]
@@ -14,9 +14,12 @@ pub struct DatabaseSettings {
 }
 
 pub fn get_configuration() -> Result<Settings, config::ConfigError> {
-    let settngs = config::Config::builder().add_source(config::File::new("configuration.yaml", config::FileFormat::Yaml)).build()?;
+    let settngs = config::Config::builder()
+        .add_source(config::File::new(
+            "configuration.yaml",
+            config::FileFormat::Yaml,
+        ))
+        .build()?;
 
     settngs.try_deserialize::<Settings>()
 }
-
-
