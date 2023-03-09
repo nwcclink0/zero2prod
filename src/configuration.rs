@@ -36,6 +36,6 @@ impl DatabaseSettings {
         format!(
             "postgres://{}:{}@{}:{}",
             self.username, self.password, self.host, self.port
-            )
+        )
     }
 }

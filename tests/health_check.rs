@@ -1,10 +1,10 @@
 use std::net::TcpListener;
 
 use sqlx::Executor;
-use sqlx::{PgPool, PgConnection, Connection};
+use sqlx::{Connection, PgConnection, PgPool};
+use uuid::Uuid;
 use zero2prod::configuration::get_configuration;
 use zero2prod::configuration::DatabaseSettings;
-use uuid::Uuid;
 
 pub struct TestApp {
     pub address: String,
@@ -35,14 +35,16 @@ async fn spawn_app() -> TestApp {
     let server = zero2prod::startup::run(listener, connection_pool.clone()).expect("");
     let _ = tokio::spawn(server);
     let address = format!("http://127.0.0.1:{}", port);
-    TestApp{
+    TestApp {
         address,
-        db_pool:connection_pool
+        db_pool: connection_pool,
     }
 }
 
 pub async fn configurate_database(config: &DatabaseSettings) -> PgPool {
-    let mut connection = PgConnection::connect(&config.connecting_string_without_db()).await.expect("Failed to connect Postgres");
+    let mut connection = PgConnection::connect(&config.connecting_string_without_db())
+        .await
+        .expect("Failed to connect Postgres");
     connection
         .execute(format!(r#"create database "{}";"#, config.database_name).as_str())
         .await
@@ -50,7 +52,10 @@ pub async fn configurate_database(config: &DatabaseSettings) -> PgPool {
     let connection_pool = PgPool::connect(&config.connecting_string())
         .await
         .expect("Failed to connect Postgres");
-    sqlx::migrate!("./migrations").run(&connection_pool).await.expect("Failed to migrate to the database");
+    sqlx::migrate!("./migrations")
+        .run(&connection_pool)
+        .await
+        .expect("Failed to migrate to the database");
 
     connection_pool
 }
@@ -86,10 +91,7 @@ async fn subscribe_returns_a_400_when_data_is_missing() {
 
     let test_cases = vec![
         ("name=jabber", "missing email"),
-        (
-            "email=jabber-shelves0n@icloud.com",
-            "missing the name",
-        ),
+        ("email=jabber-shelves0n@icloud.com", "missing the name"),
         ("", "missing both name and email"),
     ];
 
