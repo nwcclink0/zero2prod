@@ -11,12 +11,14 @@ pub struct FormData {
 }
 
 pub async fn subscribe(form: web::Form<FormData>, pool: web::Data<PgPool>) -> HttpResponse {
-    log::info!(
-        "Adding '{}' '{}' as a new subscriber.",
+    let request_id = Uuid::new_v4();
+    tracing::info!(
+        "request id {} - Adding '{}' '{}' as a new subscriber.",
+        request_id,
         form.email,
         form.name
         );
-    log::info!("Saving new subscriber details in the database");
+    tracing::info!("request_id {} - Saving new subscriber details in the database", request_id);
 
     match sqlx::query!(
         r#"
@@ -32,11 +34,11 @@ pub async fn subscribe(form: web::Form<FormData>, pool: web::Data<PgPool>) -> Ht
     .await
     {
         Ok(_) => {
-            log::info!("New subscriber details have been saved.");
+            tracing::info!("New subscriber details have been saved.");
             HttpResponse::Ok().finish()
         },
         Err(e) => {
-            log::error!("Failed to execute query: {:?}", e);
+            tracing::error!("Failed to execute query: {:?}", e);
             HttpResponse::InternalServerError().finish()
         }
     }
