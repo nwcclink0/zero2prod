@@ -8,7 +8,7 @@ pub fn get_subscriber<Sink>(
     name: String,
     env_filter: String,
     sink: Sink,
-    ) -> impl Subscriber + Sync + Send
+) -> impl Subscriber + Sync + Send
 where
     Sink: for<'a> MakeWriter<'a> + Send + Sync + 'static,
 {
