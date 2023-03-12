@@ -1,4 +1,6 @@
-use secrecy::{Secret, ExposeSecret};
+use secrecy::{ExposeSecret, Secret};
+use serde_aux::field_attributes::deserialize_number_from_string;
+use sqlx::postgres::PgConnectOptions;
 
 #[derive(serde::Deserialize)]
 pub struct Settings {
@@ -7,6 +9,7 @@ pub struct Settings {
 }
 #[derive(serde::Deserialize)]
 pub struct ApplicationSettings {
+    #[serde(deserialize_with= "deserialize_number_from_string")]
     pub port: u16,
     pub host: String,
 }
@@ -15,7 +18,8 @@ pub struct ApplicationSettings {
 pub struct DatabaseSettings {
     pub username: String,
     pub password: Secret<String>,
-    pub port: String,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub port: u16,
     pub host: String,
     pub database_name: String,
 }
@@ -30,26 +34,32 @@ pub fn get_configuration() -> Result<Settings, config::ConfigError> {
         .expect("Failed to parse APP_ENVIRONMENT");
     let environment_filename = format!("{}.yaml", environment.as_str());
     let settngs = config::Config::builder()
+        .add_source(config::File::from(
+            configuration_directory.join("base.yaml"),
+        ))
+        .add_source(config::File::from(
+            configuration_directory.join(&environment_filename),
+        ))
         .add_source(
-           config::File::from(configuration_directory.join("base.yaml"))).add_source(
-            config::File::from(configuration_directory.join(&environment_filename))
-            ).build()?;
+            config::Environment::with_prefix("APP")
+                .prefix_separator("_")
+                .separator("__"),
+        )
+        .build()?;
     settngs.try_deserialize::<Settings>()
 }
 
 impl DatabaseSettings {
-    pub fn connecting_string(&self) -> Secret<String> {
-        Secret::new(format!(
-            "postgres://{}:{}@{}:{}/{}",
-            self.username, self.password.expose_secret(), self.host, self.port, self.database_name
-        ))
+    pub fn with_db(&self) -> PgConnectOptions {
+       self.without_db().database(&self.database_name) 
     }
 
-    pub fn connecting_string_without_db(&self) -> Secret<String> {
-        Secret::new(format!(
-            "postgres://{}:{}@{}:{}",
-            self.username, self.password.expose_secret(), self.host, self.port
-        ))
+    pub fn without_db(&self) -> PgConnectOptions {
+       PgConnectOptions::new()
+           .host(&self.host)
+           .username(&self.username)
+           .password(&self.password.expose_secret())
+           .port(self.port)
     }
 }
 
@@ -62,7 +72,7 @@ impl Environment {
     pub fn as_str(&self) -> &'static str {
         match self {
             Environment::Local => "local",
-            Environment::Production => "production"
+            Environment::Production => "production",
         }
     }
 }
@@ -71,16 +81,14 @@ impl TryFrom<String> for Environment {
     type Error = String;
 
     fn try_from(s: String) -> Result<Self, Self::Error> {
-       match s.to_lowercase().as_str() {
-           "local" => Ok(Self::Local),
-           "production" => Ok(Self::Production),
-           other => Err(format!(
-                   "{} is not a supported environment. \
+        match s.to_lowercase().as_str() {
+            "local" => Ok(Self::Local),
+            "production" => Ok(Self::Production),
+            other => Err(format!(
+                "{} is not a supported environment. \
                     Use either `local` or `production`.",
-                    other
-                   )),
-       }
+                other
+            )),
+        }
     }
 }
-
-
