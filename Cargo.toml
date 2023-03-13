@@ -27,6 +27,7 @@ tracing-log = "0.1"
 secrecy = { version = "0.8", features = ["serde"]}
 tracing-actix-web = "0.6"
 serde-aux = "3" ## fix config crate will failed to pick up integres if using standard deserialization routine from serde.
+unicode-segmentation = "1"
 
 [dev-dependencies]
 reqwest = "0.11"
