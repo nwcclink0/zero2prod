@@ -77,6 +77,30 @@ pub async fn configurate_database(config: &DatabaseSettings) -> PgPool {
 }
 
 #[tokio::test]
+async fn subscribe_returns_a_200_for_vaild_form_data() {
+    let test_app = spawn_app().await;
+    let client = reqwest::Client::new();
+
+    let body = "name=jabber&email=jabber-shelves0n@icloud.com";
+    let response = client
+        .post(&format!("{}/subscriptions", &test_app.address))
+        .header("Content-Type", "application/x-www-form-urlencoded")
+        .body(body)
+        .send()
+        .await
+        .expect("Failed to execute request");
+
+    assert_eq!(200, response.status().as_u16());
+
+    let saved = sqlx::query!("Select email, name from subscriptions",)
+        .fetch_one(&test_app.db_pool)
+        .await
+        .expect("Failed to fetch saved subscriptions");
+    assert_eq!(saved.email, "jabber-shelves0n@icloud.com");
+    assert_eq!(saved.name, "jabber");
+}
+
+#[tokio::test]
 async fn subscribe_returns_a_400_when_fields_are_present_but_invalid() {
     let app = spawn_app().await;
     let client = reqwest::Client::new();
@@ -102,13 +126,7 @@ async fn subscribe_returns_a_400_when_fields_are_present_but_invalid() {
             description
         );
     }
-
-    let saved = sqlx::query!("Select email, name from subscriptions",)
-        .fetch_one(&app.db_pool)
-        .await
-        .expect("Failed to fetch saved subscriptions");
-    assert_eq!(saved.email, "jabber-shelves0n@icloud.com");
-    assert_eq!(saved.name, "jabber");
+    
 }
 
 #[tokio::test]
