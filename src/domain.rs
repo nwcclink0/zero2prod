@@ -5,6 +5,7 @@ pub struct NewSubscriber {
     pub name: SubscriberName,
 }
 
+#[derive(Debug)]
 pub struct SubscriberName(String);
 
 impl AsRef<str> for SubscriberName {
@@ -14,7 +15,7 @@ impl AsRef<str> for SubscriberName {
 }
 
 impl SubscriberName {
-    pub fn parse(s: String) -> SubscriberName {
+    pub fn parse(s: String) -> Result<SubscriberName, String> {
         let is_empty_or_whitespace = s.trim().is_empty();
         let is_too_long = s.graphemes(true).count() > 256;
 
@@ -22,9 +23,9 @@ impl SubscriberName {
         let contains_forbidden_characters = s.chars().any(|g| forbidden_characters.contains(&g));
 
         if is_empty_or_whitespace || is_too_long || contains_forbidden_characters {
-            panic!("{} is not a valid subscribe name.", s)
+            Err(format!("{} is not a valid subscribe name.", s))
         } else {
-            Self(s)
+            Ok(Self(s))
         }
     }
 
@@ -41,5 +42,50 @@ impl SubscriberName {
         // This allows them to perform *arbitrary* changes to
         // value itself, potentially breaking our invariants!
         &mut self.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use crate::domain::SubscriberName;
+    use claim::{assert_ok, assert_err};
+
+    #[test]
+    fn a_256_graphname_long_name_is_valid() {
+        let name = "症".repeat(256);
+        assert_ok!(SubscriberName::parse(name));
+    }
+
+    #[test]
+    fn a_name_longer_than_256_graphname_is_rejected() {
+        let name = "a".repeat(257);
+        assert_err!(SubscriberName::parse(name));
+    }
+
+    #[test]
+    fn whitespace_only_names_are_rejected() {
+        let name = " ".to_string();
+        assert_err!(SubscriberName::parse(name));
+    }
+
+    #[test]
+    fn empty_string_is_rejected() {
+        let name = "".to_string();
+        assert_err!(SubscriberName::parse(name));
+    }
+
+    #[test]
+    fn names_containing_an_invalid_character_are_rejected() {
+        for name in &['/', '(', ')', '"', '<', '>', '\\', '{', '}'] {
+            let name = name.to_string();
+            assert_err!(SubscriberName::parse(name));
+        }
+    }
+
+    #[test]
+    fn a_valid_name_is_parsed_succesfully() {
+        let name = "Ursula Le Guin".to_string();
+        assert_ok!(SubscriberName::parse(name));
     }
 }
