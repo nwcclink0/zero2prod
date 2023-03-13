@@ -1,15 +1,12 @@
 use unicode_segmentation::UnicodeSegmentation;
 
-
-
-
 #[derive(Debug)]
 pub struct SubscriberName(String);
 
 impl AsRef<str> for SubscriberName {
-   fn as_ref(&self) -> &str {
+    fn as_ref(&self) -> &str {
         &self.0
-    } 
+    }
 }
 
 impl SubscriberName {
@@ -43,12 +40,11 @@ impl SubscriberName {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
 
     use crate::domain::SubscriberName;
-    use claim::{assert_ok, assert_err};
+    use claim::{assert_err, assert_ok};
 
     #[test]
     fn a_256_graphname_long_name_is_valid() {

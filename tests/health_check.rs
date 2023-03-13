@@ -83,7 +83,7 @@ async fn subscribe_returns_a_400_when_fields_are_present_but_invalid() {
     let test_cases = vec![
         ("name=&email=jabber-shelves0n@icloud.com", "empty name"),
         ("name=jabber&email=", "empty email"),
-        ("name=jabber&email=definitely-not-an-email", "invalid email")
+        ("name=jabber&email=definitely-not-an-email", "invalid email"),
     ];
 
     for (body, description) in test_cases {
@@ -95,12 +95,13 @@ async fn subscribe_returns_a_400_when_fields_are_present_but_invalid() {
             .await
             .expect("Failed to execute request");
 
-        assert_eq!(400, 
-                   response.status().as_u16(),
-                   "The API did not return a 200 OK when the payload was {}.",
-                    description);
+        assert_eq!(
+            400,
+            response.status().as_u16(),
+            "The API did not return a 200 OK when the payload was {}.",
+            description
+        );
     }
-
 
     let saved = sqlx::query!("Select email, name from subscriptions",)
         .fetch_one(&app.db_pool)
