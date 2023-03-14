@@ -50,10 +50,14 @@ async fn spawn_app() -> TestApp {
     configuration.database.database_name = Uuid::new_v4().to_string();
     let connection_pool = configurate_database(&configuration.database).await;
 
-    let sender_email = configuration.email_client.sender().expect("Invalid sender email address");
-    let email_client = EmailClient::new(configuration.email_client.base_url,sender_email);
+    let sender_email = configuration
+        .email_client
+        .sender()
+        .expect("Invalid sender email address");
+    let email_client = EmailClient::new(configuration.email_client.base_url, sender_email);
 
-    let server = zero2prod::startup::run(listener, connection_pool.clone(), email_client).expect("");
+    let server =
+        zero2prod::startup::run(listener, connection_pool.clone(), email_client).expect("");
     let _ = tokio::spawn(server);
     let address = format!("http://127.0.0.1:{}", port);
     TestApp {
