@@ -6,6 +6,7 @@ use sqlx::{Connection, PgConnection, PgPool};
 use uuid::Uuid;
 use zero2prod::configuration::get_configuration;
 use zero2prod::configuration::DatabaseSettings;
+use zero2prod::email_client::EmailClient;
 use zero2prod::telemetry::{get_subscriber, init_subscriber};
 
 static TRACING: Lazy<()> = Lazy::new(|| {
@@ -48,7 +49,11 @@ async fn spawn_app() -> TestApp {
     let mut configuration = get_configuration().expect("Failed to read configuration.");
     configuration.database.database_name = Uuid::new_v4().to_string();
     let connection_pool = configurate_database(&configuration.database).await;
-    let server = zero2prod::startup::run(listener, connection_pool.clone()).expect("");
+
+    let sender_email = configuration.email_client.sender().expect("Invalid sender email address");
+    let email_client = EmailClient::new(configuration.email_client.base_url,sender_email);
+
+    let server = zero2prod::startup::run(listener, connection_pool.clone(), email_client).expect("");
     let _ = tokio::spawn(server);
     let address = format!("http://127.0.0.1:{}", port);
     TestApp {
