@@ -1,5 +1,3 @@
-use std::thread::current;
-
 use actix_web::web;
 use actix_web::HttpResponse;
 use actix_web::ResponseError;
@@ -7,6 +5,7 @@ use chrono::Utc;
 use rand::distributions::Alphanumeric;
 use rand::thread_rng;
 use rand::Rng;
+use reqwest::StatusCode;
 use sqlx::PgPool;
 use sqlx::Postgres;
 use sqlx::Transaction;
@@ -47,38 +46,71 @@ pub async fn subscribe(
     pool: web::Data<PgPool>,
     email_client: web::Data<EmailClient>,
     base_url: web::Data<ApplicationBaseUrl>,
-) -> Result<HttpResponse, actix_web::Error> {
-    let new_subscriber = match form.0.try_into() {
-        Ok(form) => form,
-        Err(_) => return HttpResponse::BadRequest().await,
-    };
-    let mut transaction = match pool.begin().await {
-        Ok(transaction) => transaction,
-        Err(_) => return HttpResponse::InternalServerError().await,
-    };
-
-    let subscriber_id = match insert_subscriber(&mut transaction, &new_subscriber).await {
-        Ok(subscriber_id) => subscriber_id,
-        Err(_) => return HttpResponse::InternalServerError().await,
-    };
+) -> Result<HttpResponse, SubscribeError> {
+    let new_subscriber = form.0.try_into()?;
+    let mut transaction = pool.begin().await?;
+    let subscriber_id = insert_subscriber(&mut transaction, &new_subscriber).await?;
     let subscription_token = generate_subscription_token();
     store_token(&mut transaction, subscriber_id, &subscription_token).await?;
-    if transaction.commit().await.is_err() {
-        return HttpResponse::InternalServerError().await;
-    }
-
-    if send_confirmation_email(
+    transaction.commit().await?;
+    send_confirmation_email(
         &email_client,
         new_subscriber,
         &base_url.0,
         &subscription_token,
     )
-    .await
-    .is_err()
-    {
-        return HttpResponse::InternalServerError().await;
+    .await?;
+
+    Ok(HttpResponse::Ok().finish())
+}
+
+#[derive(Debug)]
+pub enum SubscribeError {
+    VailidationError(String),
+    DatabaseError(sqlx::Error),
+    StoreTokenError(StoreTokenError),
+    SendEmailError(reqwest::Error),
+}
+
+impl std::fmt::Display for SubscribeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Failed to create a new subscriber.")
     }
-    HttpResponse::Ok().await
+}
+
+impl std::error::Error for SubscribeError {}
+impl ResponseError for SubscribeError {
+    fn status_code(&self) -> reqwest::StatusCode {
+        match self {
+            SubscribeError::VailidationError(_) => StatusCode::BAD_REQUEST,
+            SubscribeError::DatabaseError(_)
+            | SubscribeError::StoreTokenError(_)
+            | SubscribeError::SendEmailError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+}
+impl From<reqwest::Error> for SubscribeError {
+    fn from(e: reqwest::Error) -> Self {
+        Self::SendEmailError(e)
+    }
+}
+
+impl From<sqlx::Error> for SubscribeError {
+    fn from(e: sqlx::Error) -> Self {
+        Self::DatabaseError(e)
+    }
+}
+
+impl From<StoreTokenError> for SubscribeError {
+    fn from(e: StoreTokenError) -> Self {
+        Self::StoreTokenError(e)
+    }
+}
+
+impl From<String> for SubscribeError {
+    fn from(e: String) -> Self {
+        Self::VailidationError(e)
+    }
 }
 
 #[tracing::instrument(
@@ -114,10 +146,9 @@ impl std::fmt::Display for StoreTokenError {
             f,
             "A database error was encountered while \
             trying to store a subscription token."
-            )
+        )
     }
 }
-impl ResponseError for StoreTokenError {}
 
 impl std::error::Error for StoreTokenError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
@@ -134,12 +165,12 @@ impl std::fmt::Debug for StoreTokenError {
 fn error_chain_fmt(
     e: &impl std::error::Error,
     f: &mut std::fmt::Formatter<'_>,
-    ) -> std::fmt::Result {
+) -> std::fmt::Result {
     writeln!(f, "{}\n", e)?;
     let mut current = e.source();
     while let Some(cause) = current {
-       writeln!(f, "Caused by:\n\t{}", cause)?;
-       current = cause.source();
+        writeln!(f, "Caused by:\n\t{}", cause)?;
+        current = cause.source();
     }
     Ok(())
 }
