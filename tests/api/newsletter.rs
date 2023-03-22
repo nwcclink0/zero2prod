@@ -61,7 +61,7 @@ async fn create_confirmed_subscriber(app: &TestApp) {
 }
 
 #[tokio::test]
-async fn newsletters_are_delievered_to_confirmed_subscribers() {
+async fn newsletters_are_delivered_to_confirmed_subscribers() {
     let app = spawn_app().await;
     create_confirmed_subscriber(&app).await;
 
