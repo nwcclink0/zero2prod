@@ -27,7 +27,7 @@ pub struct TestApp {
     pub address: String,
     pub db_pool: PgPool,
     pub email_server: MockServer,
-    test_user: TestUser,
+    pub test_user: TestUser,
 }
 
 pub struct ConfirmationLinks {
@@ -128,7 +128,7 @@ pub async fn configurate_database(config: &DatabaseSettings) -> PgPool {
     connection_pool
 }
 
-struct TestUser {
+pub struct TestUser {
     pub user_id: Uuid,
     pub username: String,
     pub password: String,
