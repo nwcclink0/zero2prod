@@ -155,14 +155,15 @@ async fn non_existing_user_is_rejected() {
                 "html":"<p>Newsletter body as HTML</p>"
             }
         }))
-    .send()
+        .send()
         .await
         .expect("Failed to execute request.");
 
     assert_eq!(401, response.status().as_u16());
-    assert_eq!(r#"Basic realm="publish""#,
-               response.headers()["WWW-Authenticate"]
-               );
+    assert_eq!(
+        r#"Basic realm="publish""#,
+        response.headers()["WWW-Authenticate"]
+    );
 }
 
 #[tokio::test]
@@ -182,12 +183,13 @@ async fn invalid_password_is_rejected() {
                 "html":"<p>Newsletter body as HTML</p>"
             }
         }))
-    .send()
+        .send()
         .await
         .expect("Failed to execute request.");
-    
+
     assert_eq!(401, response.status().as_u16());
-    assert_eq!(r#"Basic realm="publish""#,
-               response.headers()["WWW-Authenticate"]
-               );
+    assert_eq!(
+        r#"Basic realm="publish""#,
+        response.headers()["WWW-Authenticate"]
+    );
 }
