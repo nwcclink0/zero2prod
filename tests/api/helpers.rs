@@ -76,14 +76,6 @@ impl TestApp {
             .await
             .expect("Failed to execute request")
     }
-
-    pub async fn test_user(&self) -> (String, String) {
-        let row = sqlx::query!("SELECT username, password_hash FROM users LIMIT 1",)
-            .fetch_one(&self.db_pool)
-            .await
-            .expect("Failed to crate test users.");
-        (row.username, row.password_hash)
-    }
 }
 
 pub async fn spawn_app() -> TestApp {
