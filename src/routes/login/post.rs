@@ -2,6 +2,7 @@ use actix_web::http::header::LOCATION;
 use actix_web::web;
 use actix_web::HttpResponse;
 use actix_web::ResponseError;
+use hmac::{Hmac, Mac};
 use reqwest::StatusCode;
 use secrecy::Secret;
 use sqlx::PgPool;
@@ -57,10 +58,20 @@ impl std::fmt::Debug for LoginError {
 }
 
 impl ResponseError for LoginError {
-    fn status_code(&self) -> reqwest::StatusCode {
-        match self {
-            LoginError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            LoginError::AuthError(_) => StatusCode::UNAUTHORIZED,
-        }
+    fn error_response(&self) -> HttpResponse {
+        let query_string = format!("error={}", urlencoding::Encoded::new(self.to_string()));
+        let secret: &[u8] = todo!();
+        let hmac_tag = {
+            let mut mac = Hmac::<sha2::Sha256>::new_from_slice(&secret).unwrap();
+            mac.update(query_string.as_bytes());
+            mac.finalize().into_bytes()
+        };
+        HttpResponse::build(self.status_code())
+            .insert_header((LOCATION, format!("/login?{query_string}&tag={hmac_tag:x}")))
+            .finish();
+    }
+
+    fn status_code(&self) -> StatusCode {
+        StatusCode::SEE_OTHER
     }
 }
