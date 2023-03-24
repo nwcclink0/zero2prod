@@ -3001,6 +3001,7 @@ dependencies = [
  "config",
  "env_logger 0.9.3",
  "fake",
+ "hex",
  "hmac",
  "htmlescape",
  "linkify",
