@@ -46,7 +46,7 @@ impl Application {
             connection_pool,
             email_client,
             configuration.application.base_url,
-            configuration.application.hmac_secret
+            configuration.application.hmac_secret,
         )?;
 
         Ok(Self { port, server })
