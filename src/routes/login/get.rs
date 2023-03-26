@@ -1,7 +1,4 @@
-use actix_web::{
-    http::header::ContentType,
-    HttpResponse,
-};
+use actix_web::{http::header::ContentType, HttpResponse};
 use actix_web_flash_messages::{IncomingFlashMessages, Level};
 use std::fmt::Write;
 
