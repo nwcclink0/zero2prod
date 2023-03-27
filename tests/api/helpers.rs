@@ -136,6 +136,14 @@ impl TestApp {
             .await
             .expect("Failed to execute request.")
     }
+
+    pub async fn post_logout(&self) -> reqwest::Response {
+        self.api_client
+            .post(&format!("{}/admin/logout", self.address))
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
 }
 
 pub async fn spawn_app() -> TestApp {
@@ -219,7 +227,7 @@ impl TestUser {
         .hash_password(self.password.as_bytes(), &salt)
         .unwrap()
         .to_string();
-        dbg!(&password_hash);
+        //dbg!(&password_hash);
 
         sqlx::query!(
             "INSERT INTO users (user_id, username, password_hash)
