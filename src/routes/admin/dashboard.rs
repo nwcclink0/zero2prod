@@ -1,6 +1,7 @@
 use crate::session_state::TypedSession;
-use actix_web::{http::header::ContentType, HttpResponse, web};
+use actix_web::{http::header::ContentType, web, HttpResponse};
 use anyhow::Context;
+use reqwest::header::LOCATION;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -18,7 +19,9 @@ pub async fn admin_dashboard(
     let username = if let Some(user_id) = session.get_user_id().map_err(e500)? {
         get_user_name(user_id, &pool).await.map_err(e500)?
     } else {
-        todo!()
+        return Ok(HttpResponse::SeeOther()
+            .insert_header((LOCATION, "/login"))
+            .finish());
     };
 
     Ok(HttpResponse::Ok()
@@ -39,7 +42,7 @@ pub async fn admin_dashboard(
         )))
 }
 
-#[tracing::instrument(name= "Get username", skip(pool))]
+#[tracing::instrument(name = "Get username", skip(pool))]
 async fn get_user_name(user_id: Uuid, pool: &PgPool) -> Result<String, anyhow::Error> {
     let row = sqlx::query!(
         r#"
