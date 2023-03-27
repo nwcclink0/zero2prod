@@ -5,11 +5,9 @@ use secrecy::Secret;
 pub struct FormData {
     current_password: Secret<String>,
     new_password: Secret<String>,
-    new_password_check: Secret<String>
+    new_password_check: Secret<String>,
 }
 
-pub async fn change_password(
-    form: web::Form<FormData>
-    ) -> Result<HttpResponse, actix_web::Error> {
+pub async fn change_password(form: web::Form<FormData>) -> Result<HttpResponse, actix_web::Error> {
     todo!()
 }
