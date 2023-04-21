@@ -1,7 +1,7 @@
 redis_uri: "redis://127.0.0.1:6379"
 application:
   port: 8000
-  hmac_secret: ""
+  hmac_secret: "Issuing-Myspace-Unsliced-Unlined-Unbalance-Bullhorn-Catcher-Phrase-Drew5-Student"
 database:
   host: "localhost"
   port: 5432
@@ -10,6 +10,6 @@ database:
   database_name: "newsletter"
 email_client:
   base_url: "localhost"
-  sender_email: ""
-  authorization_token: ""
+  sender_email: "service@arcsparrow.com"
+  authorization_token: "0b1d0478-82e9-4776-990f-d6bc25f6aa4c"
   timeout_millseconds: 10000

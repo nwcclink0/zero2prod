@@ -3,13 +3,11 @@ use crate::{
     routes::admin::dashboard::get_user_name,
     utils::*,
 };
-use actix_web::{error::InternalError, web, HttpResponse};
+use actix_web::{web, HttpResponse};
 use actix_web_flash_messages::FlashMessage;
 use secrecy::{ExposeSecret, Secret};
 use sqlx::PgPool;
-use uuid::Uuid;
 
-use crate::session_state::TypedSession;
 
 #[derive(serde::Deserialize)]
 pub struct FormData {
@@ -44,7 +42,7 @@ pub async fn change_password(
                 FlashMessage::error("The current password is incorrect.").send();
                 Ok(see_other("/admin/password"))
             }
-            AuthError::UnexpectedError(_) => Err(e500(e).into()),
+            AuthError::UnexpectedError(_) => Err(e500(e)),
         };
     }
     crate::authentication::change_password(*user_id, form.0.new_password, &pool)
