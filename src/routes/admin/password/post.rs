@@ -8,7 +8,6 @@ use actix_web_flash_messages::FlashMessage;
 use secrecy::{ExposeSecret, Secret};
 use sqlx::PgPool;
 
-
 #[derive(serde::Deserialize)]
 pub struct FormData {
     current_password: Secret<String>,
